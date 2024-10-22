@@ -1,0 +1,148 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Servicio Infraestructura",
+        "description": "Retorna datos de Infraestructura Educativa",
+        "version": "1.2"
+    },
+    "host": "localhost:3005",
+    "basePath": "/infra",
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/infraAccesoMedio": {
+            "get": {
+                "tags": [
+                    "Infra Acceso Medio"
+                ],
+                "security": [{
+                    "Bearer": []
+                }],
+                "summary": "Busca un listado de Accesos Medios",
+                "description": "Devuelve todos los registros de accesos medios para infraestructura.",
+                "operationId": "getAccesoMedio",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Operación exitosa"
+                    },
+                    "400": {
+                        "description": "Solicitud incorrecta"
+                    },
+                    "404": {
+                        "description": "Registros no encontrados"
+                    },
+                    "500": {
+                        "description": "Error en la consulta"
+                    }
+                }
+            }
+        },
+        "/infraAccesoMedio/{id}": {
+            "get": {
+                "tags": [
+                    "Infra Acceso Medio"
+                ],
+                "security": [{
+                    "Bearer": []
+                }],
+                "summary": "Busca un listado de Accesos Medios",
+                "description": "Devuelve un registro de acceso medio para infraestructura.",
+                "operationId": "getAccesoMedio",
+                "parameters": [{
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "number"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "Operación exitosa"
+                    },
+                    "400": {
+                        "description": "Solicitud incorrecta"
+                    },
+                    "404": {
+                        "description": "Registro no encontrado"
+                    },
+                    "500": {
+                        "description": "Error en la consulta"
+                    }
+                }
+            }
+        },
+        "/infraAccesoMedioTodo/{idpredio}": {
+            "get": {
+                "tags": [
+                    "Infra Acceso Medio"
+                ],
+                "summary": "Busca la información de Acceso de un Predio ",
+                "description": "Devuelve todos los accesos medios para infraestructura.",
+                "operationId": "getAccesoMedioTodo",
+                "security": [{
+                    "Bearer": []
+                }],
+                "parameters": [{
+                    "name": "idpredio",
+                    "in": "path",
+                    "required": true,
+                    "type": "number"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "Operación exitosa"
+                    },
+                    "400": {
+                        "description": "Solicitud incorrecta"
+                    },
+                    "404": {
+                        "description": "Registro no encontrado"
+                    },
+                    "500": {
+                        "description": "Error en la consulta"
+                    }
+                }
+            }
+        },
+        "/infraAccesoMedioGradaRampa": {
+            "get": {
+                "tags": [
+                    "Infra Acceso Grada Rampa"
+                ],
+                "summary": "Busca la información de equipamientos de brigada para Instituciones Educativas. ",
+                "description": "Devuelve todos los accesos medios para infraestructura.",
+                "operationId": "getAccesoMedioGradaRampa",
+                "security": [{
+                    "Bearer": []
+                }],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Operación exitosa"
+                    },
+                    "400": {
+                        "description": "Solicitud incorrecta"
+                    },
+                    "404": {
+                        "description": "Registro no encontrado"
+                    },
+                    "500": {
+                        "description": "Error en la consulta"
+                    }
+                }
+            }
+        }
+
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

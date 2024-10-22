@@ -1,0 +1,11 @@
+#Ignore files
+node_modules/
+node_modules_w/
+node_modules_l/
+
+public/uploads
+package-lock.json
+.sequelizerc
+.idea/
+
+database.sqlite

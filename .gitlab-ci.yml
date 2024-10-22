@@ -1,0 +1,18 @@
+stages:
+  - init
+  - deploy
+
+taskinit:
+  stage: init
+  script:
+    - echo "Inicio de despliegue Back"
+
+taskdeploy:
+  stage: deploy
+  script:
+    - cd /var/www/backendsie
+    - git pull http://gituser:gitpass@gitlab.minedu.gob.bo/SIE/backendsie.git
+    - pm2 restart cctp
+    - echo "Fin del despliegue Back"
+  only:
+    - master
