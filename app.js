@@ -11,12 +11,12 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocumentInfra = require('./config/swaggerInfra.json');
 
 var indexRouter = require('./routes/index');
-//var cuadernoRouter = require('./routes/cuaderno');
-//var wfTramiteRouter = require('./routes/wftramite');
-var usersRouter = require('./routes/users');
-//var infraRouter = require('./routes/infraestructura');
-//var cctpRouter = require('./routes/cctp');
-var ueggRouter = require('./routes/uegg');
+// //var cuadernoRouter = require('./routes/cuaderno');
+// //var wfTramiteRouter = require('./routes/wftramite');
+// var usersRouter = require('./routes/users');
+// //var infraRouter = require('./routes/infraestructura');
+// //var cctpRouter = require('./routes/cctp');
+// var ueggRouter = require('./routes/uegg');
 
 var app = express();
 app.use(cors());
@@ -35,11 +35,7 @@ app.use('/api-docs-infra', swaggerUi.serve, swaggerUi.setup(swaggerDocumentInfra
 app.use(function(req, res, next) {
     try {
         let public_route = [
-            '/api/auth',
-            '/infra',
-            '/cctp',
-            '/uegg',
-            '/cctp/nueva/apertura',
+            '/api/auth',            
             '/api/change/auth'
         ];
         if (req.headers.authorization) {
@@ -72,12 +68,10 @@ app.use(function(req, res, next) {
 });
 
 app.use('/', indexRouter);
-//app.use('/cuaderno', cuadernoRouter);
-//app.use('/tramite', wfTramiteRouter);
-app.use('/users', usersRouter);
-//app.use('/infra', infraRouter);
-//app.use('/cctp', cctpRouter);
-app.use('/uegg', ueggRouter);
+
+////app.use('/users', usersRouter);
+
+////app.use('/uegg', ueggRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

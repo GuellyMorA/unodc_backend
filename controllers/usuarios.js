@@ -4,10 +4,13 @@ const bcrypt = require("bcrypt-nodejs");//gma const bcrypt = require("bcrypt");
 const Key = require("../config/key");
 const Persona = require("../models").persona;
 const Usuario = require("../models").usuarios;
-const UsuarioRol = require("../models").usuario_rol;
-const RolTipo = require("../models").rol_tipo;
-const LugarTipo = require("../models").lugar_tipo;
+const UsuarioRol = require("../models").usuarios_rol;
+const Roles = require("../models").roles;
+const RolMenuOperaciones = require("../models").rol_menus_operaciones;
+const Sequelize = require('sequelize');
+
 const sequelize = Usuario.sequelize;
+//sequelize.Op = Sequelize.Op;
 
 module.exports = {
   list(req, res) {
@@ -89,63 +92,66 @@ module.exports = {
 
   auth(req, res) {console.log(req.body);
     let cambio_clave = req.body.user_login == req.body.password_hash ? true : false;
+             
+
     Usuario.findOne({ where: { user_login: req.body.user_login, estado: "ACTIVO" } })
       .then(async usuario => {
         console.log('usuario.password_hash: ',  usuario.password_hash );
         if (md5(req.body.password_hash) === usuario.password_hash) {
           var token = jwt.sign({ usuario_id: usuario.id }, Key.apikey);
-          let usuario_rol_lugar = await UsuarioRol.findAll({
-            where: { usuario_id: usuario.id, estado: "ACTIVO" },
-            attributes: ["id", "sub_sistema"],
+              // Primero, obtenemos todos los roles de un usuario       
+          UsuarioRol.findAll({
+            where: { usuarios_id: usuario.id },
+            attributes: [ "roles_sigla"],
             include: [
               {
-                model: RolTipo,
+                model: Roles,
                 required: true,
                 attributes: ["id", "rol"]
-              },
-              {
-                model: LugarTipo,
-                required: true,
-                attributes: ["id", "lugar"]
               }
             ]
+          }).then(async usuarioRol => {                              
+              // Convertimos el resultado a un array de IDs
+              const rolSigla = usuarioRol.map(roles => roles.roles_sigla);
+              console.log('rolSigla :', rolSigla);
+
+              // Ahora utilizamos el array con el operador IN
+              const menuOperaciones = await RolMenuOperaciones.findAll({
+                    where: {
+                      roles_sigla:  {
+                        [Sequelize.Op.in]: rolSigla
+                          } //rolSigla, // Aquí usamos el array de IDs
+                    },
+              });
+
+            console.log('menuOperaciones filtrados:', JSON.stringify(menuOperaciones, null, 2));
+            console.log('usuarioRol: ', JSON.stringify(usuarioRol ));
+            //usuarioRol.forEach(roles_sigla => {  console.log(`  - ${roles_sigla.roles_sigla}`);          });
+          /* let query =`SELECT id, roles_sigla, menus_sigla, operaciones_sigla, descripcion FROM rol_menus_operaciones  WHERE estado= 'ACTIVO' AND roles_sigla = `+ usuarioRol.id ;
+              let rolesMenu = await sequelize.query(query, {
+                   type: sequelize.QueryTypes.SELECT,
+                   plain: true,
+                   raw: true
+             });*/
+ 
+             res.status(200).json({
+               usuario_id: usuario.id,
+               username: usuario.user_login,
+               nombre: usuario ? usuario.nombres + " " + usuario.apellido_pat + " " + usuario.apellido_mat : "",           
+               roles: rolSigla,
+               menu_Operaciones: menuOperaciones,
+               cambio_clave: cambio_clave || usuario.reset_key,
+               token
+             });
+ 
           });
-          let persona = await Persona.findOne({
-            where: { id: usuario.persona_id }
-          });
-          let queryAuth = "";
-          if (req.body.sistema == "INFRA") {
-            let gestion_actual = 2019; //new Date().getFullYear();
-            queryAuth =
-              "select ie.id, ie.le_juridicciongeografica_id from institucioneducativa ie inner join maestro_inscripcion mi on mi.institucioneducativa_id = ie.id where gestion_tipo_id=" +
-              gestion_actual +
-              " and mi.persona_id=" +
-              usuario.persona_id +
-              " limit 1";
-          } else {
-            queryAuth ='select ie.id, ie.le_juridicciongeografica_id from institucioneducativa ie inner join maestro_inscripcion mi on mi.institucioneducativa_id = ie.id where mi.persona_id='+usuario.persona_id+' limit 1';
-          }console.log(queryAuth);
-          let sie_jg = await sequelize.query(queryAuth, {
-            type: sequelize.QueryTypes.SELECT,
-            plain: true,
-            raw: true
-          });console.log(sie_jg);
-          res.status(200).json({
-            usuario_id: usuario.id,
-            nombre: persona
-              ? persona.nombre + " " + persona.paterno + " " + persona.materno
-              : "",
-            codigo_sie: sie_jg ? sie_jg.id : "",
-            codigo_jg: sie_jg ? sie_jg.le_juridicciongeografica_id : "",
-            rol_lugar: usuario_rol_lugar,
-            cambio_clave: cambio_clave,
-            token
-          });
+
+
         } else {
           res.status(400).send({ message: "Usuario o contraseña invalida" });
         }
-      })
-      .catch(err => {
+    })
+    .catch(err => {
         res.status(400).send({ message: "Usuario no autorizado 1. " + err});
       });
   },

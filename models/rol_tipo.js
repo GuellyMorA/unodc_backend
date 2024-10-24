@@ -1,17 +1,35 @@
 'use strict';
 
 module.exports = (sequelize, DataTypes) => {
-  const RolTipo = sequelize.define('rol_tipo', {
+  const RolTipo = sequelize.define('roles', {
+  /*  id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      primaryKey: true,
+      autoIncrement: true,
+      field: 'id'
+  },*/
+    sigla: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      primaryKey: true,
+      autoIncrement: false,
+      field: 'sigla'
+      },
+
     rol: DataTypes.STRING,
-    lugar_nivel_tipo_id: DataTypes.INTEGER,
-    sub_sistema: DataTypes.STRING,
-    diminutivo: DataTypes.STRING
+    descripcion: DataTypes.STRING,
+    nivel_geografico_sigla: DataTypes.INTEGER,
+   
   }, {
-    tableName: 'rol_tipo',
+    tableName: 'roles',
     timestamps: false,
   });
-
   RolTipo.associate = function(models) {
+    // RolTipo.hasMany(models.rol_menus_operaciones, {
+    // 	foreignKey: 'roles_sigla'
+
+    // });
   };
   return RolTipo;
 };
