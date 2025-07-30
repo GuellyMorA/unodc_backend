@@ -1,0 +1,147 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+// para transparencia
+let transporter11111 ='';
+
+var app = require("../app");
+var debug = require("debug")("cp-api:server");
+var http = require("http");
+const https = require('https'); // Para el servidor HTTPS
+const fs = require('fs'); // Para leer los archivos de certificado
+const path = require('path'); // Para manejar rutas de archivos
+
+const PORT_HTTPS = process.env.PORT_HTTPS || 3001; // Puerto para HTTPS (debería ser 443 en producción)
+
+// --- CONFIGURACIÓN DE CERTIFICADOS ---
+// Asegúrate de que las rutas a tus archivos de certificado sean correctas.
+// Lo ideal es que NO estén en tu repositorio Git. Usa variables de entorno o un
+// sistema de gestión de secretos. Para este ejemplo, asumimos que están en una carpeta 'certs'.
+const privateKeyPath = path.join(__dirname, 'certs', 'private.key');
+const certificatePath = path.join(__dirname, 'certs', 'public.crt');
+const caBundlePath = path.join(__dirname, 'certs', 'public.crt'); // Opcional
+
+let privateKey, certificate, caBundle;
+
+try {
+    privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+    certificate = fs.readFileSync(certificatePath, 'utf8');
+    // Si tienes un ca_bundle, cárgalo también
+    // caBundle = fs.readFileSync(caBundlePath, 'utf8');
+
+
+
+
+  } catch (err) {
+    console.error('Error al cargar los archivos de certificado SSL:', err);
+    console.error('Asegúrate de que los archivos private.key, certificate.crt (y ca_bundle.crt si aplica) existan en la carpeta "certs".');
+    // Si no puedes cargar los certificados, no inicies el servidor HTTPS
+    process.exit(1); // Salir si los certificados no se cargan
+}
+
+const credentials = {
+  key: privateKey,
+  cert: certificate,
+  // ca: caBundle // Descomentar si usas un ca_bundle
+};
+// --- Configuración de HTTPS ---// Lee los archivos del certificado
+const options = {
+  key: fs.readFileSync(path.join(__dirname, 'certs', 'localhost-key.pem')), // Ruta a tu clave privada
+  cert: fs.readFileSync(path.join(__dirname,'certs',  'localhost.pem'))     // Ruta a tu certificado
+};
+// --- CREAR SERVIDORES HTTP y HTTPS ---
+
+// 1. Servidor HTTP (para redireccionar a HTTPS o para uso interno si tienes un proxy inverso)
+/*const httpServer = http.createServer(app);
+httpServer.listen(PORT_HTTP, () => {
+  console.log(`Servidor HTTP escuchando en el puerto ${PORT_HTTP}`);
+});
+*/
+// 2. Servidor HTTPS
+const httpsServer = https.createServer(options, app); //  rbc  credentials
+httpsServer.listen(PORT_HTTPS, () => {
+  console.log(`Servidor HTTPS escuchando en el puerto ${PORT_HTTPS}`);
+});
+
+
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || "3006");
+app.set("port", port);//port
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+ server.listen(port, () => {
+  console.log("App running on port 3006: ", port)
+});
+server.on("error", onError);
+server.on("listening", onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+
+  var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+  debug("Listening on " + bind);
+}
