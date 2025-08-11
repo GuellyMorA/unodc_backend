@@ -81,6 +81,8 @@ router.get(   '/getByCodEstado/:cod_denuncia/:estado',        denunciaPersonasCo
 router.get(   '/listRepDenByDepto/:depto_id',        denunciaPersonasController.listRepDenByDepto);  
 router.get(   '/listRepDenByDeptoByInfFinal/:depto_id',        denunciaPersonasController.listRepDenByDeptoByInfFinal);  
 router.get(   '/listRepDenByDeptoByEstado/:depto_id/:estado/:fec_registro_hecho_desde/:fec_registro_hecho_hasta',        denunciaPersonasController.listRepDenByDeptoByEstado);  
+router.get(   '/listRepDenByTipo/:depto_id/:usuarios_id',        denunciaPersonasController.listRepDenByTipo);  
+router.get(   '/listRepDenByTipoPlazo/:depto_id/:usuarios_id',   denunciaPersonasController.listRepDenByTipoPlazo);  
 
 
 

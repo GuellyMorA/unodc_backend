@@ -129,13 +129,14 @@ module.exports = {
                 res.status(400).send(error);
               });
           },
+
       listRepDenByDeptoByInfFinal(req, res) {
             console.log(' req.params.usuarios_id, req.params.depto_id ', req.params.usuarios_id, req.params.depto_id);
             /// denunci  y denunciante
             return sequelize.query(`
             SELECT 
-            count(dper.nivel_geografico_id) AS cantidad , dper.nivel_geografico_id,depto.descripcion 
-                  FROM                
+                  count(dper.nivel_geografico_id) AS cantidad , dper.nivel_geografico_id,depto.descripcion 
+            FROM                
                   denuncia_personas dper 
                   INNER JOIN nivel_geografico depto ON dper.nivel_geografico_id = depto.id 
    
@@ -159,7 +160,6 @@ module.exports = {
                 res.status(400).send(error);
               });
           },
-
 
       listRepDenByDepto(req, res) {
             console.log(' req.params.usuarios_id, req.params.depto_id ', req.params.usuarios_id, req.params.depto_id);
@@ -189,13 +189,204 @@ module.exports = {
                 res.status(400).send(error);
               });
           },
-    
-          
+      
+      listRepDenByTipo(req, res) {
+            console.log(' req.params.usuarios_id, req.params.depto_id ', req.params.usuarios_id, req.params.depto_id);
+         
+            return sequelize.query(`            
+ WITH ultimos_seguimientos AS (
+    SELECT 
+        denuncia_personas_id,    MAX(fec_cre::DATE) AS max_fec_cre
+    FROM seguimiento
+    GROUP BY denuncia_personas_id
+), 
+ con_derivacion AS (
+    SELECT 
+        DISTINCT ON (dper.cod_denuncia) seg.transaccion,dper.cod_denuncia,dper.id, seg.id as idSeg,
+        CASE 
+            WHEN seg.transaccion = 'DEN_DERIVAR' THEN 'ASIGNADO'
+            --WHEN seg.transaccion IN ('DEN_RECHAZAR', 'DEN_ARCHIVAR', 'DEN_ACEPTAR') THEN 'CONCLUSION'
+            WHEN seg.transaccion = 'DEN_RECHAZAR' THEN 'RECHAZADO_CON_INF'
+            WHEN seg.transaccion = 'DEN_ARCHIVAR' THEN 'DEN_ARCHIVAR'
+            WHEN seg.transaccion = 'DEN_ACEPTAR' THEN 'ACEPTADO_CON_INF'
+            ELSE seg.estado
+        END AS estado , seg.fec_cre::DATE as fec_cre, seg.transaccion AS sigla
+    FROM 
+        denuncia_personas dper
+        INNER JOIN nivel_geografico depto ON dper.nivel_geografico_id = depto.id 
+        INNER JOIN nivel_geografico mun ON dper.nivel_geografico_sigla = mun.sigla 
+        LEFT JOIN seguimiento seg ON dper.id = seg.denuncia_personas_id 
+        LEFT JOIN usuarios usu ON seg.usuarios_id = usu.id 
+        LEFT JOIN actividades act ON seg.actividades_id = act.id 
+        INNER JOIN ultimos_seguimientos us ON us.denuncia_personas_id = dper.id  AND seg.fec_cre::DATE = us.max_fec_cre
+    WHERE 
+        seg.usuarios_id = CASE WHEN :depto_id = 0 THEN seg.usuarios_id ELSE :usuarios_id END
+        AND dper.nivel_geografico_id = CASE WHEN :depto_id = 0 THEN dper.nivel_geografico_id ELSE :depto_id END
+),  --  select * from con_derivacion
+sin_asignacion AS (
+    SELECT 
+        'CREAR' as transaccion, 'SIN_ASIGNACION' AS estado, dper.fec_cre::DATE as fec_cre, dper.transaccion AS sigla
+    FROM 
+        denuncia_personas dper
+        INNER JOIN nivel_geografico depto ON dper.nivel_geografico_id = depto.id 
+        INNER JOIN nivel_geografico mun ON dper.nivel_geografico_sigla = mun.sigla 
+      --  LEFT JOIN seguimiento seg ON dper.id = seg.denuncia_personas_id 
+      --  LEFT JOIN usuarios usu ON seg.usuarios_id = usu.id 
+     --   LEFT JOIN actividades act ON seg.actividades_id = act.id 
+    WHERE dper.estado = 'SOLICITADO' and NOT EXISTS (
+								        SELECT 1 FROM seguimiento seg 
+								         WHERE seg.denuncia_personas_id = dper.id  )
+      --  AND seg.usuarios_id = CASE WHEN :depto_id = 0 THEN seg.usuarios_id ELSE :usuarios_id END
+        AND dper.nivel_geografico_id = CASE WHEN :depto_id = 0 THEN dper.nivel_geografico_id ELSE :depto_id END
+)
+	SELECT COUNT(estado) AS total, estado, estado AS codigo, 'con_derivacion' AS descrip
+	FROM con_derivacion
+	GROUP BY estado
+UNION ALL
+	SELECT COUNT(estado) AS total, estado, 'SIN_ASIGNACION' AS codigo, 'denuncias_sin_asignacion' AS descrip
+	FROM sin_asignacion
+	GROUP BY estado
+UNION ALL 
+	SELECT COUNT(estado) AS total, estado,  'CREADAS_ULT_5_DIAS' AS codigo, 'denuncias_sin_asignacion_ult_5_dias' AS descrip
+	FROM sin_asignacion	as denuncias_creadas_ult_5_dias
+	Where fec_cre::DATE >=  CURRENT_DATE::DATE - INTERVAL '5 days'
+    Group by estado, fec_cre
+UNION ALL
+	SELECT	 COUNT(estado) AS total, estado, dia_semana AS codigo, 'denuncias_por_dias_ult_5_dias' AS descrip
+	FROM ( 
+		SELECT (estado) AS total, 'POR_DIAS' as estado,  TO_CHAR(fec_cre, 'TMDay') AS dia_semana
+		FROM con_derivacion	
+		where fec_cre >=  CURRENT_DATE::DATE - INTERVAL '5 days'
+	UNION ALL
+		SELECT (estado) AS total, 'POR_DIAS' as estado, TO_CHAR(fec_cre, 'TMDay') AS dia_semana
+		FROM sin_asignacion	
+		where fec_cre >=  CURRENT_DATE::DATE - INTERVAL '5 days'
+	)	AS denuncias_ult_5_dias	
+    group by estado, dia_semana   
+UNION ALL
+	SELECT	 COUNT(estado) AS total,  'POR_MES' as estado, mes AS codigo, 'denuncias_por_mes' AS descrip
+	FROM ( 
+		SELECT (estado) AS total, 'POR_MES' as estado,  TO_CHAR(DATE_TRUNC('month', fec_cre), 'TMMonth') AS mes
+		FROM con_derivacion	
+		where fec_cre >=  (CURRENT_DATE - INTERVAL '1 year')
+	UNION ALL
+		SELECT (estado) AS total, 'POR_MES' as estado,  TO_CHAR(DATE_TRUNC('month', fec_cre), 'TMMonth') AS mes
+		FROM sin_asignacion	
+		where fec_cre >= (CURRENT_DATE - INTERVAL '1 year')
+	)	as denuncias_por_mes
+    group by mes --TO_CHAR(DATE_TRUNC('month', fec_cre), 'YYYY-MM') 
+   	UNION ALL
+ 	SELECT COUNT(estado) AS total, estado, 'ASIGNADO_INICIAL' AS codigo, 'con_derivacion_inicial' AS descrip
+	FROM con_derivacion
+	WHERE estado = 'ASIGNADO' --AND fec_cre >=  CURRENT_DATE::DATE - INTERVAL '5 days'
+	GROUP BY estado    
+ORDER BY descrip,estado,codigo ;
+                                               
+             `, {
+              replacements: {
+                    usuarios_id: req.params.usuarios_id,
+                depto_id: req.params.depto_id
+              },
+              type: sequelize.QueryTypes.SELECT,
+              plain: false,
+              raw: true
+            })
+              .then((seguimiento) => res.status(200).send(seguimiento))
+              .catch((error) => {
+                res.status(400).send(error);
+              });
+          },     
+      
+      listRepDenByTipoPlazo(req, res) {
+            console.log(' req.params.usuarios_id, req.params.depto_id ', req.params.usuarios_id, req.params.depto_id);
+         
+            return sequelize.query(`     
+            WITH ultimos_seguimientos AS (
+            SELECT 
+                  denuncia_personas_id,
+                  MAX(fec_cre::DATE) AS max_fec_cre
+            FROM seguimiento
+            GROUP BY denuncia_personas_id
+            ),
+            con_derivacion AS (
+            SELECT 
+                  dper.cod_denuncia, seg.transaccion,dper.id,seg.id  segId,
+                  (dper.fec_cre::DATE - CURRENT_DATE::DATE )::integer + COALESCE( p3.param_numerico_ini::integer, 0)  + COALESCE( p1.param_numerico_ini::integer, 0)  + COALESCE( p2.param_numerico_ini::integer, 0)   AS dias_retraso,
+                  seg.estado , seg.fec_cre::DATE as fec_cre  
+            FROM 
+                  denuncia_personas dper
+                  INNER JOIN nivel_geografico depto ON dper.nivel_geografico_id = depto.id 
+                  INNER JOIN nivel_geografico mun ON dper.nivel_geografico_sigla = mun.sigla 
+                  LEFT JOIN seguimiento seg ON dper.id = seg.denuncia_personas_id 
+                  LEFT JOIN usuarios usu ON seg.usuarios_id = usu.id 
+                  LEFT JOIN actividades act ON seg.actividades_id = act.id 
+                  LEFT JOIN parametros p1 ON dper.modulos_sigla_amp_1 = p1.modulos_sigla 
+                  LEFT JOIN parametros p2 ON dper.modulos_sigla_amp_2 = p2.modulos_sigla
+                  LEFT JOIN parametros p3 ON 'DEN_SEG_AMP_45_DIAS' = p3.modulos_sigla
+                  INNER JOIN ultimos_seguimientos us ON us.denuncia_personas_id = dper.id  AND seg.fec_cre::DATE = us.max_fec_cre
+            WHERE 
+                  seg.usuarios_id = CASE WHEN :depto_id = 0 THEN seg.usuarios_id ELSE :usuarios_id END
+                  AND dper.nivel_geografico_id = CASE WHEN :depto_id = 0 THEN dper.nivel_geografico_id ELSE :depto_id END     
+            ), -- select * from con_derivacion
+            con_derivacion_all AS (
+            SELECT 
+                  seg.transaccion,dper.cod_denuncia,dper.Id,
+                  seg.estado , dper.fec_cre::DATE as fec_cre, seg.transaccion AS sigla
+            FROM 
+                  denuncia_personas dper
+                  INNER JOIN nivel_geografico depto ON dper.nivel_geografico_id = depto.id 
+                  INNER JOIN nivel_geografico mun ON dper.nivel_geografico_sigla = mun.sigla 
+                  LEFT JOIN seguimiento seg ON dper.id = seg.denuncia_personas_id 
+                  LEFT JOIN usuarios usu ON seg.usuarios_id = usu.id 
+                  LEFT JOIN actividades act ON seg.actividades_id = act.id 
+            WHERE 
+                  seg.usuarios_id = CASE WHEN :depto_id = 0 THEN seg.usuarios_id ELSE :usuarios_id END
+                  AND dper.nivel_geografico_id = CASE WHEN :depto_id = 0 THEN dper.nivel_geografico_id ELSE :depto_id END          
+            ) 
+                  SELECT COUNT(*) AS total, MAX(estado), 'CON_RETRASO' AS codigo, 'con_retraso_en_plazos' AS descrip	
+                  FROM con_derivacion
+                  where dias_retraso < 0  AND estado <> 'CONCLUSION'
+                  --GROUP BY estado
+            UNION ALL
+                  SELECT COUNT(estado) AS total, estado,  'SIN_RETRASO' AS codigo, 'sin_retraso_en_plazos' AS descrip	
+                  FROM con_derivacion
+                  where dias_retraso >= 0  AND estado <> 'CONCLUSION'
+                  GROUP BY estado   
+            UNION ALL
+                  SELECT COUNT(estado) AS total,  estado,   'ACEPTADO_CON_INF' AS codigo, 'denuncias_con_inf_final_aceptadas' AS descrip
+                        FROM con_derivacion_all	
+                        where fec_cre >=  (CURRENT_DATE - INTERVAL '1 year') AND estado = 'CONCLUSION'
+                  GROUP BY estado ,codigo 
+            UNION ALL
+                  SELECT COUNT(estado) AS total,  estado,  'RECHAZADO_CON_INF' AS codigo, 'denuncias_con_inf_final_rechazadas' AS descrip
+                        FROM con_derivacion_all	
+                        where fec_cre >=  (CURRENT_DATE - INTERVAL '1 year') AND transaccion = 'DEN_RECHAZAR'
+                  GROUP BY estado ,codigo 
+            UNION ALL
+                  SELECT COUNT(estado) AS total, 'RECHAZADO_POR_MES' as estado,  TO_CHAR(DATE_TRUNC('month', fec_cre), 'TMMonth') AS codigo, 'denuncias_por_mes_con_inf_final_rechazadas' AS descrip
+                        FROM con_derivacion_all	
+                        where fec_cre >=  (CURRENT_DATE - INTERVAL '1 year') AND transaccion = 'DEN_RECHAZAR'
+                  GROUP BY estado ,codigo ;                               
+             `, {
+              replacements: {
+                usuarios_id: req.params.usuarios_id,
+                depto_id: req.params.depto_id
+              },
+              type: sequelize.QueryTypes.SELECT,
+              plain: false,
+              raw: true
+            })
+              .then((seguimiento) => res.status(200).send(seguimiento))
+              .catch((error) => {
+                res.status(400).send(error);
+              });
+          }, 
+
       getByCodEstado(req, res) {   //denunciaPersonasGetByCod  
             console.log(' req.params.cod_denuncia: ',req.params.cod_denuncia , 'req.params.estado: ',req.params.estado );
             let qry='';
         if(req.params.estado=='SOLICITADO'){
-                  //solo primera ampliacion ,PLAZO MAXIMO 5 dias   Y 5 dias de ampliacion  , desde admicion: SOLICITADO hasta ASIGNADO
+                  //solo primera ampliacion ,PLAZO MAXIMO 5 dias   Y 5 dias de ampliacion  , desde admicion: SOLICITADO(CREADO) hasta ASIGNADO
               qry=`SELECT 
                   dp.id,dp.cod_denuncia ,dp.estado , modulos_sigla_amp_1,modulos_sigla_amp_2,--fec_ampliacion_1,fec_ampliacion_2,  
                   CASE 
@@ -287,8 +478,6 @@ module.exports = {
                         res.status(400).send(error);
                   });
       },
-
-
       
       getByNivelGeo(req, res) {  //  denunciaPersonasGetByNivelGeo
             console.log('denunciaPersonasGetByNivelGeo: req.params.depto_id: ',req.params.depto_id ,  'req.params.rol:',req.params.rol );
@@ -344,7 +533,7 @@ module.exports = {
                   });
       },
 
-    getByCod(req, res) {   //denunciaPersonasGetByCod  
+      getByCod(req, res) {   //denunciaPersonasGetByCod  
             console.log(': req.params.cod_denuncia: ',req.params.cod_denuncia );
  /// denuncia  y denunciante
             return sequelize.query(`
