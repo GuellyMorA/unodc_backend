@@ -51,7 +51,7 @@ const logOperation = async (req, message, query, parameters, operation) => {
 module.exports = {
 
   listRepByNivelGeoByUsuId(req, res) {
-    console.log(' req.params.usuarios_id, req.params.depto_id ', req.params.usuarios_id, req.params.depto_id);
+    console.log(' req.params.usuarios_id, req.params.depto_id: ', req.params.usuarios_id, req.params.depto_id);
     /// denunci  y denunciante
     return sequelize.query(`
     SELECT 
@@ -63,7 +63,9 @@ module.exports = {
            LEFT  JOIN seguimiento seg ON dper.id  = seg.denuncia_personas_id 
            LEFT  JOIN usuarios usu  ON seg.usuarios_id  = usu.id 
            LEFT  JOIN actividades act  ON seg.actividades_id  = act.id 
-           WHERE   seg.usuarios_id =  :usuarios_id 
+           WHERE  --rbc2025 seg.usuarios_id =  :usuarios_id 
+             seg.usuarios_id =  CASE   WHEN :depto_id   = 0 THEN seg.usuarios_id
+                                                       ELSE :usuarios_id  END
            AND  dper.nivel_geografico_id =  CASE   WHEN :depto_id   = 0 THEN dper.nivel_geografico_id
                                                        ELSE :depto_id  END
     GROUP by  seg.estado ,CASE   WHEN seg.fec_registro = CURRENT_DATE::DATE  AND seg.estado   = 'ASIGNADO' THEN 'ASIGNADO_HOY' ELSE seg.estado  END
@@ -180,17 +182,14 @@ module.exports = {
       });
   },
 
-    
-
-
-    list(req, res) {
-return Seguimiento
+  list(req, res) {
+  return Seguimiento
             .findAll({})
             .then(( seguimiento ) => res.status(200).send(seguimiento )) 
             .catch((error) => { res.status(400).send(error); });
     },
 
-    getById(req, res) {
+  getById(req, res) {
         console.log(req.params.id);
 return Seguimiento
             .findByPk(req.params.id)
