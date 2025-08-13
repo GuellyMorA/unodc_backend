@@ -500,8 +500,8 @@ UNION ALL
                      gr.sigla_ab || '. '||   usu.nombres || ' '|| usu.apellido_pat || ' ' || usu.apellido_mat AS gestor_seguimiento ,
                      
                      '' AS color_semaforo,
-             (dper.fec_cre::DATE - CURRENT_DATE::DATE )::integer +45::integer   AS    dias_retraso,
-            dper.usu_cre,TO_CHAR(dper.fec_cre, 'DD/MM/YYYY')  AS fec_cre  , dper.usu_mod  ,dper.fec_mod ,dper.estado ,  dper.transaccion
+             case WHEN dper.estado <> 'CONCLUSION' then (dper.fec_cre::DATE - CURRENT_DATE::DATE )::integer +45::integer else 0::integer END  AS    dias_retraso,          
+             dper.usu_cre,TO_CHAR(dper.fec_cre, 'DD/MM/YYYY')  AS fec_cre  , dper.usu_mod  ,dper.fec_mod ,dper.estado ,  dper.transaccion
                FROM 
                    denuncia_personas dper 
                    INNER JOIN personas dnte  ON 	dper.id  = dnte.denuncia_personas_id           
