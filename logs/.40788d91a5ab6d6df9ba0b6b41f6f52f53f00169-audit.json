@@ -52,7 +52,15 @@
             "date": 1755084546427,
             "name": "logs\\2025-08-13-results.log",
             "hash": "397eebef42ca2cfbda765c19202f9dbc3aab11d879ab00704b89f9b85ab3d235"
+<<<<<<< HEAD
 >>>>>>> b1dd7a9ff104466ae68b8e83a8a4028d5e7ffa4b
+=======
+        },
+        {
+            "date": 1755164876675,
+            "name": "logs\\2025-08-14-results.log",
+            "hash": "3425a1b8a0931e6ed54893f25aec267266638de989e44b5240c28978a5380840"
+>>>>>>> da0b49a48c69edc367cd5ae825237bd75149a793
         }
     ],
     "hashType": "sha256"
