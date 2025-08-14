@@ -129,7 +129,7 @@ module.exports = {
     console.log(' req.params.usuarios_id, req.params.depto_id  ', req.params.usuarios_id, req.params.depto_id, req.params.rol);
     /// denunci  y denunciante
     return sequelize.query(`
-    SELECT DISTINCT ON (dper.cod_denuncia)    --    ROW_NUMBER() OVER (ORDER BY dper.cod_denuncia ASC)
+   SELECT DISTINCT ON (dper.cod_denuncia)    --    ROW_NUMBER() OVER (ORDER BY dper.cod_denuncia ASC)
     0 AS fila, dper.id as denuncia_personas_id ,dper.cod_denuncia, dper.sigla  , dper.lugar_hecho ,dper.nivel_geografico_id  as depto_id ,depto.descripcion  as departamento , dper.nivel_geografico_sigla  as mun_id , mun.descripcion  as municipio ,
    TO_CHAR(dper.fec_registro_hecho, 'DD/MM/YYYY')  AS fec_registro_hecho  , dper.hora_registro_hecho ,dper.detalle_hecho , 
    case  when dper.reserva_identidad IS FALSE  AND denuncia_anonima IS FALSE  then 'Denuncia' else 
@@ -138,14 +138,14 @@ module.exports = {
     seg.id AS seg_id , seg.observacion, TO_CHAR(seg.fec_registro, 'DD/MM/YYYY') AS fec_registro,  seg.usuarios_id, usu.id AS  gestor_id ,usu.apellido_pat AS apellido_pat_gestor  ,usu.apellido_mat AS apellido_mat_gestor  ,usu.nombres AS nombres_gestor , 
     gr.sigla_ab || ' '||   usu.nombres || ' '|| usu.apellido_pat || ' ' || usu.apellido_mat AS gestor_seguimiento , 
     usu.grados_sigla || '. '||   usu.nombres || ' '|| usu.apellido_pat || ' ' || usu.apellido_mat AS gestor_seguimiento_dos,
-    (dper.fec_cre::DATE - CURRENT_DATE::DATE )::integer +45::integer  + p1.param_numerico_ini::integer  AS    dias_retraso,
+    (dper.fec_cre::DATE - CURRENT_DATE::DATE )::integer + COALESCE( p3.param_numerico_ini::integer, 0)  + COALESCE( p1.param_numerico_ini::integer, 0)  + COALESCE( p2.param_numerico_ini::integer, 0)   AS dias_retraso,
    act.id AS actividades_id , act.actividad, act.sigla AS actividad_sigla, act.descripcion, act.tipo AS  actividad_tipo ,  '' As dnado_nombre_completo_concat,        
    dper.usu_cre,TO_CHAR(dper.fec_cre, 'DD/MM/YYYY')  AS fec_cre   , dper.usu_mod  ,dper.fec_mod ,dper.estado ,  dper.transaccion     
    FROM 
           denuncia_personas dper 
           INNER JOIN nivel_geografico depto ON dper.nivel_geografico_id = depto.id 
           INNER JOIN nivel_geografico mun ON dper.nivel_geografico_sigla  = mun.sigla 
-          LEFT  JOIN LATERAL (   --  LEFT  JOIN seguimiento seg ON dper.id  = seg.denuncia_personas_id 
+          LEFT  JOIN LATERAL (  
             SELECT id ,usuarios_id,actividades_id,observacion,fec_registro
             FROM seguimiento seg 
             WHERE seg.denuncia_personas_id =dper.id 
@@ -154,17 +154,18 @@ module.exports = {
           LEFT  JOIN usuarios usu  ON seg.usuarios_id  = usu.id   
           INNER JOIN usuarios_rol u_r  ON 	usu.id = u_r.usuarios_id
           LEFT  JOIN actividades act  ON seg.actividades_id  = act.id 
-          left JOIN parametros p1 ON dper.modulos_sigla_amp_1 = p1.modulos_sigla 
+          LEFT JOIN parametros p1 ON dper.modulos_sigla_amp_1 = p1.modulos_sigla 
+        LEFT JOIN parametros p2 ON dper.modulos_sigla_amp_2 = p2.modulos_sigla
+        LEFT JOIN parametros p3 ON 'DEN_SEG_AMP_45_DIAS' = p3.modulos_sigla
           INNER JOIN grados gr ON 	gr.sigla  = usu.grados_sigla 
      WHERE                                                      --  rol='GES_DEP_LP' 
           ( seg.usuarios_id = :usuarios_id  or u_r.roles_sigla  =  CASE   WHEN :rol   in ('TRANSP_NAL','DIRECT_NAL','GES_SEGNAL',
           'GES_DEP_CO','GES_DEP_LP','GES_DEP_OR',   'GES_DEP_SC','GES_DEP_BE','GES_DEP_TA', 'GES_DEP_PA','GES_DEP_PO')  THEN u_r.roles_sigla
                                                       ELSE '0'  END  ) 
-        --  AND act.tipo ='ASIGNADO' 
      AND ( :rol   in ('TRANSP_NAL','DIRECT_NAL','GES_SEGNAL'    )
           or dper.nivel_geografico_id =   CASE   WHEN :depto_id   = 0 THEN dper.nivel_geografico_id
                                        ELSE :depto_id  END  )
-      ORDER BY dper.cod_denuncia DESC --,dper.id DESC 
+      ORDER BY dper.cod_denuncia DESC 
      `, {        
       
       replacements: {
