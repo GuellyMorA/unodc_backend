@@ -10,8 +10,6 @@ const config = require(__dirname + '/../config/config.json')[env];
 //const dotenv='';
 let transporter ='';
 
-// para guelly
-let transporter11111 ='';
 
 
 const sendMail= async (mailOptions)=> {

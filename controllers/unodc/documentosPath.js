@@ -1,40 +1,7 @@
 
 const DocumentosPath = require('../../models/unodc').documentos_path;
 const sequelize = DocumentosPath.sequelize;
-/*
-var express = require('express');
-var router = express.Router();
 
-const path = require('path');
-const multer = require('multer');
-// Configuración de multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/evidencia_denuncias/');   // uploads/evidencia_denuncias
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`); // cb(null, file.originalname);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  const validTypes = /mp4|m4v|mp3|wav|pdf|png|docx|doc|bmp|jpeg|jpg/;
-    const isValid = validTypes.test(path.extname(file.originalname).toLowerCase()) && validTypes.test(file.mimetype);
-
-  if (isValid) {
-    cb(null, true);
-  } else {
-    cb(new Error('Tipo de archivo no válido. Solo se permiten videos, audios y PDFs.'));
-  }
-};
-
-// Límite de tamaño de archivo establecido en 10 MB
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB en bytes
-});
-*/
 const EventLog = require('../../models/unodc').event_log_operaciones; // Importar modelo de errores
 const logger = require('../../config/logger');
 
@@ -79,44 +46,7 @@ const logError = async (req, message, stack, query, parameters, operation) => {
     logger.error('Error al guardar error log', { message: error.message });
   }
 };
-/*
-// Endpoint para subir archivos
-router.post('/api/upload', upload.fields([{ name: 'files[0]', maxCount: 10 }, { name: 'files[1]', maxCount: 10 }, { name: 'files[2]', maxCount: 10 }]), (req, res) => {
-  res.json({
-    message: 'Archivos subidos satisfactoriamente',
-    files: req.files,
-  });
-});
 
-// Middleware para manejar la carga de archivos
-const uploadFiles = (req, res) => { // , next
-  upload.array('files')(req, res, (err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al subir archivos', error: err });
-    }
-    const uploadedFiles = req.files;
-
-    // Procesar los archivos subidos
-    uploadedFiles.forEach(file => {
-      // Mover el archivo a una ubicación permanente, cambiar el nombre, etc.
-      console.log(`File uploaded: ${file.originalname}`);
-    });
-  
-    res.json({ message: 'Files uploaded successfully '  });
-    // Si la carga de archivos fue exitosa
-   // next();
-  //   res.status(200).json({
-   //    message: 'Lógica inicial ejecutada. Archivos subidos satisfactoriamente.',
-   //    files: req.files,
- //    });
-
-
-  });
-
-  
-};
-
-*/
 module.exports = {
 
 

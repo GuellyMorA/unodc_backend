@@ -3,16 +3,10 @@ var router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const FILE_DIRECTORY = path.join(__dirname.split("routes")[0], 'uploads\\evidencia_denuncias');
+const FILE_DIRECTORY = path.join(__dirname.split("routes")[0], 'uploads/evidencia_denuncias'); //  uploads\\evidencia_denuncias
 
-// para guelly
-let transporter11111 ='';
 
 // Middleware
-//app.use(cors());
-//app.use(express.urlencoded({ extended: true }));
-//app.use(express.json());
-//app.use('/uploads', express.static('uploads'));
 
       // Configuración de multer
       const storage = multer.diskStorage({
@@ -126,16 +120,19 @@ router.put(   '/rolMenusOperaciones/:id',        rolMenusOperacionesController.u
   // Ruta para descargar archivos
   router.get('/uploads/evidencia_denuncias/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(FILE_DIRECTORY, filename);
+    const filePath = 	path.join(FILE_DIRECTORY, filename);
+    //"C:\SistemasDesarrollados\Unodc\unodc_backend\uploads\evidencia_denuncias\017-bugs-app-fantastic-meme.jpg-SD-1749955234417.jpg
+    
     
       if (!req.url ) {
         return res.status(400).json({ message: "No files uploaded Bk." });
       }
-    // Verificar si el archivo existe
+    // Verificar si el archivo existe  
+
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
-        console.error('Error. Archivo no encontrado:', filePath);
-          return res.status(404).send('Error. Archivo no encontrado');
+        console.error('Error. Archivo no encontrado en backend:', filePath);
+          return res.status(404).send('Error.. Archivo no encontrado:' + FILE_DIRECTORY +', '+ filename );
       }
     // Configurar encabezados para la descarga
         res.download(filePath, (err) => {

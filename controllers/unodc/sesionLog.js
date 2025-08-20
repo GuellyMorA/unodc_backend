@@ -5,8 +5,7 @@ const sequelize = SesionLog.sequelize;
 const sendPinToEmail = require('../../utils/Mailer');
 const logError = async (req,message, stack, query, parameters, operation) => {
 
-// para guelly
-let transporter11111 ='';
+
 
   try {
     body= req ? req.body : '';
