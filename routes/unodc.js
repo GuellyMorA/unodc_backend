@@ -40,7 +40,7 @@ let transporter11111 ='';
       const upload = multer({ 
         storage: storage, 
         fileFilter: fileFilter, 
-        limits: { fileSize: 10 * 1024 * 1024 } // 10 MB en bytes
+        limits: { fileSize: 30 * 1024 * 1024 } // 10 MB en bytes
       });
 
 
@@ -125,7 +125,7 @@ router.put(   '/rolMenusOperaciones/:id',        rolMenusOperacionesController.u
   
   // Ruta para descargar archivos
   router.get('/uploads/evidencia_denuncias/:filename', (req, res) => {
-    const filename = req.params.filename;
+    const filename = req.params.filename; // /var/unodc/unodc_backend/uploads\evidencia_denuncias/WhatsApp Image 2025-05-30 at 10.08.24 AM.jpeg-SD-1750886713056.jpeg
     const filePath = path.join(FILE_DIRECTORY, filename);
     
       if (!req.url ) {
