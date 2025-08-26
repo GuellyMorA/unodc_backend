@@ -514,7 +514,7 @@ UNION ALL
                         ORDER BY id DESC
                         LIMIT 1) seg ON true    
                    LEFT  JOIN usuarios usu  ON seg.usuarios_id  = usu.id 
-                   INNER JOIN grados gr on gr.sigla = usu.grados_sigla
+                   LEFT JOIN grados gr on gr.sigla = usu.grados_sigla
             WHERE
                    :rol   in ('TRANSP_NAL','DIRECT_NAL','GES_SEGNAL','GES_DEP_CO','GES_DEP_LP','GES_DEP_OR',   'GES_DEP_SC','GES_DEP_BE','GES_DEP_TA', 'GES_DEP_PA','GES_DEP_PO' ,'GES_DEP_CH'   )
                   AND 
