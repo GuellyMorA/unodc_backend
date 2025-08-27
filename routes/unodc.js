@@ -34,7 +34,7 @@ const FILE_DIRECTORY = path.join(__dirname.split("routes")[0], 'uploads/evidenci
       const upload = multer({ 
         storage: storage, 
         fileFilter: fileFilter, 
-        limits: { fileSize: 10 * 1024 * 1024 } // 10 MB en bytes
+        limits: { fileSize: 50 * 1024 * 1024 } // 50 MB en bytes
       });
 
 
@@ -147,7 +147,7 @@ router.put(   '/rolMenusOperaciones/:id',        rolMenusOperacionesController.u
 });
 
     // Ruta para cargar múltiples archivos
-    router.post("/documentosPathUpload", upload.array("files", 5), (req, res) => {
+    router.post("/documentosPathUpload", upload.array("files", 50), (req, res) => {// rbc upload.array("files", 5)
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded Bk." });
       }
