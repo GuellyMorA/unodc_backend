@@ -34,7 +34,11 @@ const FILE_DIRECTORY = path.join(__dirname.split("routes")[0], 'uploads/evidenci
       const upload = multer({ 
         storage: storage, 
         fileFilter: fileFilter, 
+<<<<<<< HEAD
         limits: { fileSize: 50 * 1024 * 1024 } // 50 MB en bytes
+=======
+        limits: { fileSize: 30 * 1024 * 1024 } // 10 MB en bytes
+>>>>>>> 19442801746cf60cf6f059c636218ec254f50d8e
       });
 
 
